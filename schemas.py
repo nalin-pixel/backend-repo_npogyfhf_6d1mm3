@@ -11,38 +11,49 @@ Model name is converted to lowercase for the collection name:
 - BlogPost -> "blogs" collection
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List, Literal
+from datetime import datetime
 
-# Example schemas (replace with your own):
 
 class User(BaseModel):
     """
     Users collection schema
     Collection name: "user" (lowercase of class name)
     """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    name: Optional[str] = Field(None, description="Full name")
+    email: EmailStr = Field(..., description="Email address")
+    hashed_password: Optional[str] = Field(None, description="BCrypt hashed password (for email/password auth)")
+    provider: Literal["credentials", "google"] = Field("credentials", description="Auth provider")
+    google_id: Optional[str] = Field(None, description="Google account sub (subject) id if using Google")
+    reset_token: Optional[str] = Field(None, description="Password reset token")
+    reset_expires: Optional[datetime] = Field(None, description="Password reset token expiry UTC")
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
+
+class Message(BaseModel):
+    role: Literal["user", "assistant", "system"]
+    content: str
+    created_at: Optional[datetime] = None
+
+
+class Chat(BaseModel):
+    """
+    Chats collection schema
+    Collection name: "chat" (lowercase of class name)
+    """
+    user_id: str = Field(..., description="Owner user _id as string")
+    title: str = Field("New Chat", description="Chat title")
+    messages: List[Message] = Field(default_factory=list)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+# Example schema kept for reference
 class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+    title: str
+    description: Optional[str] = None
+    price: float
+    category: str
+    in_stock: bool = True
